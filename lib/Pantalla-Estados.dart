@@ -1,18 +1,22 @@
-// room_details_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/models/reservation_data.dart';
+import 'package:myapp/models/room.dart'; // Importa el modelo Room
 import 'package:myapp/providers/room_provider.dart';
 import 'package:provider/provider.dart';
 
 
 class RoomDetailsScreen extends StatefulWidget {
-  // 1. VARIABLE para recibir los datos de la reserva
+  // Variables para recibir los datos
   final ReservationData reservationData;
+  final Room room; // Añade la variable para la habitación
 
-  // 2. CONSTRUCTOR que requiere los datos
-  const RoomDetailsScreen({super.key, required this.reservationData});
+  // Constructor que requiere ambos datos
+  const RoomDetailsScreen({
+    super.key, 
+    required this.reservationData, 
+    required this.room, // Haz que sea requerido
+  });
 
   @override
   State<RoomDetailsScreen> createState() => _RoomDetailsScreenState();
@@ -21,8 +25,9 @@ class RoomDetailsScreen extends StatefulWidget {
 class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   Widget build(BuildContext context) {
-    // Accede a los datos de la reserva a través de widget.reservationData
-    final data = widget.reservationData;
+    // Accede a los datos a través de widget
+    final reservation = widget.reservationData;
+    final room = widget.room; // Accede a la habitación
     final roomProvider = Provider.of<RoomProvider>(context);
     final primaryColor = const Color(0XFF2CB7A6);
 
@@ -40,7 +45,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
           },
         ),
         title: Text(
-          'Habitación doble',
+          room.name, // Usa el nombre de la habitación dinámico
           style: GoogleFonts.poppins(
             color: primaryColor,
             fontWeight: FontWeight.bold,
@@ -62,7 +67,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
                 child: Image.network(
-                  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                  room.imageUrl, // Usa la imagen de la habitación dinámica
                   height: 100,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -80,8 +85,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                     borderRadius: BorderRadius.circular(20.0),
                   ),
                   child: Text(
-                    // USANDO DATO DINÁMICO
-                    'NÚMERO DE RESERVA: ${data.reservationNumber}',
+                    'NÚMERO DE RESERVA: ${reservation.reservationNumber}',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -105,8 +109,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       ),
                     ),
                     Text(
-                      // USANDO DATO DINÁMICO
-                      data.guestName,
+                      reservation.guestName,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: Colors.grey,
@@ -117,10 +120,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
               ),
               const SizedBox(height: 16.0),
               // Datos de la Reserva
-              _buildInfoRow('Número de personas:', '${data.persons} adultos'),
-              _buildInfoRow('Llegada:', data.arrivalDate),
-              _buildInfoRow('Salida:', data.departureDate),
-              _buildInfoRow('Número de contacto:', data.phone),
+              _buildInfoRow('Número de personas:', '${reservation.persons} adultos'),
+              _buildInfoRow('Llegada:', reservation.arrivalDate),
+              _buildInfoRow('Salida:', reservation.departureDate),
+              _buildInfoRow('Número de contacto:', reservation.phone),
               const SizedBox(height: 24.0),
               Container(
                 padding: const EdgeInsets.all(12.0),

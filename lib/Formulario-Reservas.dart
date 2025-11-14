@@ -5,13 +5,19 @@ import 'package:intl/intl.dart';
 import 'package:myapp/Pantalla-Estados.dart';
 import 'package:myapp/models/reservation_data.dart';
 import 'package:myapp/models/reservation_form.dart';
+import 'package:myapp/models/room.dart'; // Importa el modelo Room
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
 
 class ReservationForm extends StatefulWidget {
   final DateTime? initialArrivalDate;
+  final Room room; // Añade la variable para la habitación
 
-  const ReservationForm({super.key, this.initialArrivalDate});
+  const ReservationForm({
+    super.key, 
+    this.initialArrivalDate, 
+    required this.room, // Haz que sea requerido
+  });
 
   @override
   State<ReservationForm> createState() => _ReservationFormState();
@@ -179,7 +185,8 @@ class _ReservationFormState extends State<ReservationForm> {
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => RoomDetailsScreen(
-              reservationData: result.data, 
+              reservationData: result.data,
+              room: widget.room, // Pasa la habitación actual
             ),
           ),
         );

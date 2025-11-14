@@ -83,6 +83,7 @@ class _CalendarPageState extends State<CalendarPage> {
           MaterialPageRoute(
             builder: (context) => RoomDetailsScreen(
               reservationData: reservation,
+              room: widget.room, // Pasa la habitación actual
             ),
           ),
         );
@@ -97,6 +98,7 @@ class _CalendarPageState extends State<CalendarPage> {
           MaterialPageRoute(
             builder: (context) => ReservationForm(
               initialArrivalDate: selectedDay,
+              room: widget.room, // Pasa la habitación actual
             ),
           ),
         );
