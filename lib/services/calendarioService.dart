@@ -1,7 +1,15 @@
-
 import 'package:myapp/models/reservation_data.dart';
 
 class CalendarioService {
+  // Singleton pattern
+  static final CalendarioService _instance = CalendarioService._internal();
+
+  factory CalendarioService() {
+    return _instance;
+  }
+
+  CalendarioService._internal();
+
   // Estructura de datos para almacenar reservas por ID de habitación
   final Map<String, Map<DateTime, ReservationData>> _reservationsByRoom = {
     // Ejemplo de datos iniciales
