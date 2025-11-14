@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/models/room.dart'; // Asegúrate de que este path sea correcto
+import 'package:myapp/Formulario-Reservas.dart';
+import 'package:myapp/Pantalla-Estados.dart';
+import 'package:myapp/models/reservation_data.dart';
+import 'package:myapp/models/room.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'Pantalla-Estados.dart'; // Asegúrate de que este path sea correcto
-import 'Formulario-Reservas.dart'; // Asegúrate de que este path sea correcto
 import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/constantes/colors.dart';
-
 
 // ----------------------------------------------------
 // 1. CONSTANTES Y MODELO DE DATOS
@@ -14,16 +14,36 @@ import 'package:myapp/constantes/colors.dart';
 
 // Mapeo de estados fijos a colores
 const Map<String, Color> statusColors = {
+  // Ahora 'Reservado' indica que hay un objeto ReservationData asociado
   'Reservado': kReservedColor,
   'Disponible': kAvailableColor,
 };
 
 // Mapa que simula la data de Firebase para disponibilidad
-final Map<DateTime, String> hostelAvailability = {
-  // Ejemplo de fechas reservadas
-  DateTime.utc(2025, 11, 8): 'Reservado',
-  DateTime.utc(2025, 11, 9): 'Reservado',
-  DateTime.utc(2025, 11, 10): 'Reservado',
+// CLAVE: Ahora almacena ReservationData para las fechas reservadas
+final Map<DateTime, Object?> hostelAvailability = {
+  // Ejemplo de fechas reservadas iniciales (usando datos dummy completos)
+  DateTime.utc(2025, 11, 22): ReservationData(
+      guestName: 'Ana García (Dummy)',
+      persons: '3',
+      arrivalDate: '22/11/2025',
+      departureDate: '25/11/2025',
+      phone: '555-0001',
+      reservationNumber: 'RES-001'),
+  DateTime.utc(2025, 11, 23): ReservationData(
+      guestName: 'Carlos López (Dummy)',
+      persons: '1',
+      arrivalDate: '23/11/2025',
+      departureDate: '24/11/2025',
+      phone: '555-0002',
+      reservationNumber: 'RES-002'),
+  DateTime.utc(2025, 11, 24): ReservationData(
+      guestName: 'Beatriz Pérez (Dummy)',
+      persons: '4',
+      arrivalDate: '24/11/2025',
+      departureDate: '27/11/2025',
+      phone: '555-0003',
+      reservationNumber: 'RES-003'),
 };
 
 // ----------------------------------------------------
@@ -39,14 +59,10 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  // 1. DECLARACIÓN DE VARIABLES DE ESTADO
-  // 🌟 Inicializamos con el mes y día actual para la carga automática
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   PageController? _pageController;
-
-
 
   // Variables de Rango (usadas para selección de múltiples días)
   DateTime? _rangeStart;
@@ -55,12 +71,10 @@ class _CalendarPageState extends State<CalendarPage> {
   // 2. FUNCIONES DE LÓGICA
 
   // Manejo de la selección de un solo día
-  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    // Usamos isSameDay de table_calendar
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) async {
     if (!isSameDay(_selectedDay, selectedDay)) {
       setState(() {
         _selectedDay = selectedDay;
-        // Mantenemos _focusedDay en el mes seleccionado
         _focusedDay = selectedDay;
         _rangeStart = null;
         _rangeEnd = null;
@@ -71,28 +85,53 @@ class _CalendarPageState extends State<CalendarPage> {
         selectedDay.month,
         selectedDay.day,
       );
-      final String status = hostelAvailability[normalizedDay] ?? 'Disponible';
+      
+      // Obtener el objeto de reserva o null
+      final Object? reservation = hostelAvailability[normalizedDay];
+      
+      // Determinar si está reservado basándose en si existe data
+      final bool isReserved = reservation is ReservationData;
 
-      if (status == 'Reservado') {
-        // Navegación a detalles de la reserva
-        Navigator.push(
+      // Lógica para fechas ya reservadas
+      if (isReserved) {
+        // Usamos la data REAL almacenada en el mapa
+        final ReservationData actualData = reservation as ReservationData;
+
+        // Navegación a detalles de la reserva (con data real)
+        await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const RoomDetailsScreen(
-              //date: selectedDay,
+            builder: (context) => RoomDetailsScreen(
+              reservationData: actualData,
             ),
           ),
         );
-      } else {
+      } 
+      
+      // Lógica para días disponibles
+      else {
         // Navegación a formulario de nueva reserva
-        Navigator.push(
+        // CAMBIO CLAVE: Esperamos el objeto ReservationData? como resultado
+        final ReservationData? newReservationData = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const ReservationForm(
-              //date: selectedDay,
+            builder: (context) => ReservationForm(
+              initialArrivalDate: selectedDay,
             ),
           ),
         );
+
+        // Si se devuelve un objeto ReservationData (es decir, la reserva fue creada)
+        if (newReservationData != null) {
+          // 1. Actualizamos el mapa de disponibilidad con el objeto de datos REAL.
+          setState(() {
+            hostelAvailability[normalizedDay] = newReservationData;
+            // 2. Deseleccionamos el día para que se pinte de rojo.
+            _selectedDay = null; 
+          });
+          
+          // La navegación a RoomDetailsScreen se maneja ahora dentro del formulario.
+        }
       }
     }
   }
@@ -113,10 +152,7 @@ class _CalendarPageState extends State<CalendarPage> {
     DateTime day,
     DateTime focusedDay,
   ) {
-    // Lógica de Días Fuera de Mes
     final bool isOutside = !isSameMonthLocal(day, focusedDay);
-
-    // Normalizar el día para buscar en el mapa de disponibilidad
     final normalizedDay = DateTime.utc(
       day.year,
       day.month,
@@ -126,13 +162,15 @@ class _CalendarPageState extends State<CalendarPage> {
     Color backgroundColor;
     Color textColor;
 
-    // 1. Prioridad Máxima: DÍA SELECCIONADO (Turquesa - kPrimaryColor). Se maneja en `selectedBuilder`
-    // 2. Prioridad Baja: ESTADOS FIJOS (Reservado/Disponible)
-    final String status = hostelAvailability[normalizedDay] ?? 'Disponible';
+    // Verificar si hay un objeto de reserva para este día
+    final Object? reservation = hostelAvailability[normalizedDay];
+    final bool isReserved = reservation is ReservationData;
+
+    // Determinar el estado y el color
+    final String status = isReserved ? 'Reservado' : 'Disponible';
     backgroundColor = statusColors[status] ?? kAvailableColor;
     textColor = (status == 'Disponible') ? Colors.grey : Colors.white;
 
-    // 3. LÓGICA DE OPACIDAD (Se aplica al color ya determinado)
     if (isOutside && !isSameDay(_selectedDay, day)) {
       backgroundColor = backgroundColor.withOpacity(0.5);
       textColor = Colors.grey.withOpacity(0.5);
@@ -140,13 +178,11 @@ class _CalendarPageState extends State<CalendarPage> {
 
     const double fixedFontSize = 14.0;
 
-    // Contenedor circular
     return Container(
       margin: const EdgeInsets.all(5.0),
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
-        // Borde para el día de hoy (solo si no está seleccionado y no es un día fuera del mes)
         border:
             isSameDay(day, DateTime.now()) &&
                     !isSameDay(_selectedDay, day) &&
@@ -172,9 +208,9 @@ class _CalendarPageState extends State<CalendarPage> {
     DateTime day,
     DateTime focusedDay,
   ) {
-    const Color backgroundColor = kPrimaryColor; // Añadido 'const'
+    const Color backgroundColor = kPrimaryColor;
     final bool isOutside = !isSameMonthLocal(day, focusedDay);
-    final Color finalTextColor = isOutside // Añadido 'final'
+    final Color finalTextColor = isOutside
         ? Colors.white.withOpacity(0.7)
         : Colors.white;
 

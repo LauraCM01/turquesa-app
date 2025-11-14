@@ -8,12 +8,12 @@ import 'package:myapp/chat_list/chat_model.dart'; // ⭐ Importar el modelo Chat
 class ChatScreen extends StatefulWidget {
   final String chatId;
   // ⭐ NUEVA PROPIEDAD: Objeto Chat opcional
-  final Chat? chat; 
+  final Chat? chat;
 
   const ChatScreen({
-    super.key, 
-    required this.chatId, 
-    this.chat // Permitir que se pase el objeto Chat
+    super.key,
+    required this.chatId,
+    this.chat, // Permitir que se pase el objeto Chat
   });
 
   @override
@@ -23,10 +23,10 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [
-    const ChatMessage(message: 'Hola, ¿cómo estás?', isMe: true),
+    const ChatMessage(message: 'La habitación doble necesita mantenimiento', isMe: false),
+    const ChatMessage(message: 'Muy bien gracias', isMe: true),
     const ChatMessage(message: '¡Hola! Estoy bien, ¿y tú?', isMe: false),
-    const ChatMessage(message: 'Necesito ayuda con mi cuenta.', isMe: true),
-    const ChatMessage(message: 'Claro, ¿cuál es el problema?', isMe: false),
+    const ChatMessage(message: 'Hola, ¿cómo estás?  ', isMe: true),
   ];
 
   @override
@@ -44,10 +44,12 @@ class _ChatScreenState extends State<ChatScreen> {
       Future.delayed(const Duration(seconds: 1), () {
         setState(() {
           _messages.insert(
-              0,
-              const ChatMessage(
-                  message: 'Gracias por tu mensaje. Lo revisaremos.',
-                  isMe: false));
+            0,
+            const ChatMessage(
+              message: 'Gracias por tu mensaje. Lo revisaremos.',
+              isMe: false,
+            ),
+          );
         });
       });
     });
@@ -56,7 +58,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     // ⭐ CAMBIO: Usar el nombre del chat (si existe) o el ID parcial como fallback
-    final String displayChatName = widget.chat?.name ?? 'Chat: ${widget.chatId.substring(0, 8)}...';
+    final String displayChatName =
+        widget.chat?.name ?? 'Chat: ${widget.chatId.substring(0, 8)}...';
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 240, 240, 240),
@@ -93,8 +96,10 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 10.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -114,7 +119,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _textController,
                       decoration: InputDecoration(
                         hintText: 'Escribe un mensaje...',
-                        hintStyle: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+                        hintStyle: GoogleFonts.poppins(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
                         filled: true,
                         fillColor: Colors.grey[100],
                         border: OutlineInputBorder(
@@ -122,7 +130,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 10.0),
+                          horizontal: 20.0,
+                          vertical: 10.0,
+                        ),
                       ),
                       onSubmitted: _handleSubmitted,
                       textCapitalization: TextCapitalization.sentences,

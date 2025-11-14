@@ -1,11 +1,18 @@
+// room_details_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:myapp/models/room_status.dart';
+import 'package:myapp/models/reservation_data.dart';
 import 'package:myapp/providers/room_provider.dart';
 import 'package:provider/provider.dart';
 
+
 class RoomDetailsScreen extends StatefulWidget {
-  const RoomDetailsScreen({super.key});
+  // 1. VARIABLE para recibir los datos de la reserva
+  final ReservationData reservationData;
+
+  // 2. CONSTRUCTOR que requiere los datos
+  const RoomDetailsScreen({super.key, required this.reservationData});
 
   @override
   State<RoomDetailsScreen> createState() => _RoomDetailsScreenState();
@@ -14,7 +21,10 @@ class RoomDetailsScreen extends StatefulWidget {
 class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   Widget build(BuildContext context) {
+    // Accede a los datos de la reserva a través de widget.reservationData
+    final data = widget.reservationData;
     final roomProvider = Provider.of<RoomProvider>(context);
+    final primaryColor = const Color(0XFF2CB7A6);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -24,7 +34,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
         scrolledUnderElevation: 0.0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0XFF2CB7A6)),
+          icon: Icon(Icons.arrow_back, color: primaryColor),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -32,13 +42,13 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
         title: Text(
           'Habitación doble',
           style: GoogleFonts.poppins(
-            color: const Color(0XFF2CB7A6),
+            color: primaryColor,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: Color(0XFF2CB7A6)),
+            icon: Icon(Icons.edit, color: primaryColor),
             onPressed: () {},
           ),
         ],
@@ -66,11 +76,12 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                     vertical: 8.0,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0XFF2CB7A6),
+                    color: primaryColor,
                     borderRadius: BorderRadius.circular(20.0),
                   ),
                   child: Text(
-                    'NÚMERO DE RESERVA: 31145',
+                    // USANDO DATO DINÁMICO
+                    'NÚMERO DE RESERVA: ${data.reservationNumber}',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -79,7 +90,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 24.0),
-              // Primer campo de Huésped sin ícono, le damos padding horizontal aquí:
+              // Huésped
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
@@ -94,7 +105,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       ),
                     ),
                     Text(
-                      'Laura Martínez',
+                      // USANDO DATO DINÁMICO
+                      data.guestName,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: Colors.grey,
@@ -104,16 +116,16 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 16.0),
-              // Aquí llamamos a la función con las mejoras
-              _buildInfoRow('Número de personas:', '2 adultos'),
-              _buildInfoRow('Llegada:', '19 de septiembre de 2025 - 3:00 p.m.'),
-              _buildInfoRow('Salida:', '21 de septiembre de 2025 - 11:00 a.m.'),
-              _buildInfoRow('Número de contacto:', '3114586237'),
+              // Datos de la Reserva
+              _buildInfoRow('Número de personas:', '${data.persons} adultos'),
+              _buildInfoRow('Llegada:', data.arrivalDate),
+              _buildInfoRow('Salida:', data.departureDate),
+              _buildInfoRow('Número de contacto:', data.phone),
               const SizedBox(height: 24.0),
               Container(
                 padding: const EdgeInsets.all(12.0),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0XFF2CB7A6)),
+                  border: Border.all(color: primaryColor),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 child: Row(
@@ -123,7 +135,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       children: [
                         Icon(
                           roomProvider.statusIcon,
-                          color: const Color(0xFF2CB7A6),
+                          color: primaryColor,
                         ),
                         const SizedBox(width: 8.0),
                         Text(
@@ -131,15 +143,15 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2CB7A6),
+                            color: primaryColor,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_circle_outline,
-                        color: Color(0xFF2CB7A6),
+                        color: primaryColor,
                       ),
                       onPressed: () => _showStatusMenu(context),
                     ),
@@ -157,7 +169,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       if (states.contains(MaterialState.hovered)) {
                         return Colors.grey.withOpacity(0.1);
                       }
-                      return null; // Use the default for other states
+                      return null;
                     }),
                   ),
                   child: Text(
@@ -178,10 +190,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
   Widget _buildInfoRow(String title, String subtitle) {
     return Padding(
-      // Aplicamos el padding vertical (8.0) y un padding horizontal (8.0) para moverlo un poco del borde.
       padding: const EdgeInsets.only(bottom: 8.0, left: 20.0, right: 8.0),
       child: Row(
-        // Añadimos el crossAxisAlignment para que el texto siga alineado al inicio.
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
