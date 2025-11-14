@@ -1,67 +1,58 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
+
+import 'package:myapp/models/reservation_data.dart';
 
 class CalendarioService {
-  final String baseUrl = "https://hostalsanrosa-production.up.railway.app/api";
-
-  /// Obtiene el token de acceso
-  Future<String?> obtenerToken() async {
-    final url = Uri.parse("$baseUrl/token/");
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "username": "sanrosa",
-        "password": "termalessantarosadecabal",
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data["access"];
-    } else {
-      print("Error al obtener token: ${response.body}");
-      return null;
+  // Estructura de datos para almacenar reservas por ID de habitación
+  final Map<String, Map<DateTime, ReservationData>> _reservationsByRoom = {
+    // Ejemplo de datos iniciales
+    'R001': {
+      DateTime.utc(2025, 11, 22): ReservationData(
+          guestName: 'Ana García (Dummy)',
+          persons: '3',
+          arrivalDate: '22/11/2025',
+          departureDate: '25/11/2025',
+          phone: '555-0001',
+          reservationNumber: 'RES-001'),
+      DateTime.utc(2025, 11, 23): ReservationData(
+          guestName: 'Ana García (Dummy)',
+          persons: '3',
+          arrivalDate: '22/11/2025',
+          departureDate: '25/11/2025',
+          phone: '555-0001',
+          reservationNumber: 'RES-001'),
+      DateTime.utc(2025, 11, 24): ReservationData(
+          guestName: 'Ana García (Dummy)',
+          persons: '3',
+          arrivalDate: '22/11/2025',
+          departureDate: '25/11/2025',
+          phone: '555-0001',
+          reservationNumber: 'RES-001'),
+      DateTime.utc(2025, 11, 25): ReservationData(
+          guestName: 'Ana García (Dummy)',
+          persons: '3',
+          arrivalDate: '22/11/2025',
+          departureDate: '25/11/2025',
+          phone: '555-0001',
+          reservationNumber: 'RES-001'),
     }
+  };
+
+  // Obtener las reservas para una habitación específica
+  Map<DateTime, ReservationData> getReservationsForRoom(String roomId) {
+    return _reservationsByRoom[roomId] ?? {};
   }
 
-  /// Obtiene la disponibilidad de la habitación entre fechas dinámicas
-  Future<Map<DateTime, String>> obtenerDisponibilidad(int habitacionId) async {
-    final token = await obtenerToken();
-    if (token == null) return {};
+  // Agregar una nueva reserva para una habitación
+  void addReservation(String roomId, DateTime startDate, DateTime endDate, ReservationData reservationData) {
+    if (!_reservationsByRoom.containsKey(roomId)) {
+      _reservationsByRoom[roomId] = {};
+    }
 
-    final now = DateTime.now();
-    final fechaInicio = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 10)));
-    final fechaFin = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month + 3, now.day));
-
-    final url = Uri.parse(
-      "$baseUrl/calendario/habitacion/$habitacionId/?fecha_inicio=$fechaInicio&fecha_fin=$fechaFin",
-    );
-
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final disponibilidad = data['disponibilidad'] as List;
-      final Map<DateTime, String> mapa = {};
-
-      for (var item in disponibilidad) {
-        final fecha = DateTime.parse(item['fecha']);
-        final disponible = item['disponible'];
-        mapa[DateTime.utc(fecha.year, fecha.month, fecha.day)] =
-            disponible ? 'Disponible' : 'Reservado';
-      }
-
-      return mapa;
-    } else {
-      print("Error al obtener disponibilidad: ${response.body}");
-      return {};
+    DateTime currentDay = startDate;
+    while (currentDay.isBefore(endDate) || currentDay.isAtSameMomentAs(endDate)) {
+      final normalizedDay = DateTime.utc(currentDay.year, currentDay.month, currentDay.day);
+      _reservationsByRoom[roomId]![normalizedDay] = reservationData;
+      currentDay = currentDay.add(const Duration(days: 1));
     }
   }
 }

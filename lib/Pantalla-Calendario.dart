@@ -4,6 +4,7 @@ import 'package:myapp/Pantalla-Estados.dart';
 import 'package:myapp/models/reservation_data.dart';
 import 'package:myapp/models/reservation_form.dart';
 import 'package:myapp/models/room.dart';
+import 'package:myapp/services/calendarioService.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,41 +20,6 @@ const Map<String, Color> statusColors = {
   'Disponible': kAvailableColor,
 };
 
-// Mapa que simula la data de Firebase para disponibilidad
-// CLAVE: Ahora almacena ReservationData para las fechas reservadas
-final Map<DateTime, Object?> hostelAvailability = {
-  // Ejemplo de fechas reservadas iniciales (usando datos dummy completos)
-  // Las fechas se deben normalizar a UTC para comparación
-  DateTime.utc(2025, 11, 22): ReservationData(
-      guestName: 'Ana García (Dummy)',
-      persons: '3',
-      arrivalDate: '22/11/2025',
-      departureDate: '25/11/2025',
-      phone: '555-0001',
-      reservationNumber: 'RES-001'),
-  DateTime.utc(2025, 11, 23): ReservationData(
-      guestName: 'Ana García (Dummy)', // Misma reserva
-      persons: '3',
-      arrivalDate: '22/11/2025',
-      departureDate: '25/11/2025',
-      phone: '555-0001',
-      reservationNumber: 'RES-001'),
-  DateTime.utc(2025, 11, 24): ReservationData(
-      guestName: 'Ana García (Dummy)', // Misma reserva
-      persons: '3',
-      arrivalDate: '22/11/2025',
-      departureDate: '25/11/2025',
-      phone: '555-0001',
-      reservationNumber: 'RES-001'),
-  DateTime.utc(2025, 11, 25): ReservationData(
-      guestName: 'Ana García (Dummy)', // El día de salida también está ocupado
-      persons: '3',
-      arrivalDate: '22/11/2025',
-      departureDate: '25/11/2025',
-      phone: '555-0001',
-      reservationNumber: 'RES-001'),
-};
-
 // ----------------------------------------------------
 // 2. WIDGET DE CALENDARIO (ESTRUCTURA BASE)
 // ----------------------------------------------------
@@ -67,6 +33,9 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
+  final CalendarioService _calendarioService = CalendarioService();
+  late Map<DateTime, ReservationData> _reservationsForRoom;
+
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   final CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -75,6 +44,12 @@ class _CalendarPageState extends State<CalendarPage> {
   // Variables de Rango (usadas para selección de múltiples días)
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+
+  @override
+  void initState() {
+    super.initState();
+    _reservationsForRoom = _calendarioService.getReservationsForRoom(widget.room.id);
+  }
 
   // 2. FUNCIONES DE LÓGICA
 
@@ -95,22 +70,19 @@ class _CalendarPageState extends State<CalendarPage> {
       );
       
       // Obtener el objeto de reserva o null
-      final Object? reservation = hostelAvailability[normalizedDay];
+      final ReservationData? reservation = _reservationsForRoom[normalizedDay];
       
-      // Determinar si está reservado basándose en si existe data (es una instancia de ReservationData)
-      final bool isReserved = reservation is ReservationData;
+      // Determinar si está reservado basándose en si existe data
+      final bool isReserved = reservation != null;
 
       // Lógica para fechas ya reservadas (Rojo)
       if (isReserved) {
-        // Usamos la data REAL almacenada en el mapa
-        final ReservationData actualData = reservation as ReservationData;
-
         // Navegación a detalles de la reserva (con data real)
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RoomDetailsScreen(
-              reservationData: actualData,
+              reservationData: reservation,
             ),
           ),
         );
@@ -135,24 +107,14 @@ class _CalendarPageState extends State<CalendarPage> {
           final startDate = result.startDate;
           final endDate = result.endDate;
 
-          // 1. ITERAR y actualizar el mapa para TODO el rango
-          setState(() {
-            DateTime currentDay = startDate;
-            // Iteramos desde la fecha de llegada hasta la fecha de salida (inclusive)
-            while (currentDay.isBefore(endDate) || isSameDay(currentDay, endDate)) {
-              final normalizedLoopDay = DateTime.utc(currentDay.year, currentDay.month, currentDay.day);
-              
-              // Guardamos el objeto de reserva real para cada día del rango
-              hostelAvailability[normalizedLoopDay] = newReservationData;
-              
-              currentDay = currentDay.add(const Duration(days: 1));
-            }
+          // 1. Usar el servicio para agregar la reserva
+          _calendarioService.addReservation(widget.room.id, startDate, endDate, newReservationData);
 
-            // 2. Deseleccionamos el día para que se pinte de rojo.
+          // 2. Actualizar el estado local
+          setState(() {
+            _reservationsForRoom = _calendarioService.getReservationsForRoom(widget.room.id);
             _selectedDay = null; 
           });
-          
-          // La navegación a RoomDetailsScreen se maneja dentro del formulario.
         }
       }
     }
@@ -185,8 +147,8 @@ class _CalendarPageState extends State<CalendarPage> {
     Color textColor;
 
     // Verificar si hay un objeto de reserva para este día
-    final Object? reservation = hostelAvailability[normalizedDay];
-    final bool isReserved = reservation is ReservationData;
+    final ReservationData? reservation = _reservationsForRoom[normalizedDay];
+    final bool isReserved = reservation != null;
 
     // Determinar el estado y el color
     final String status = isReserved ? 'Reservado' : 'Disponible';
