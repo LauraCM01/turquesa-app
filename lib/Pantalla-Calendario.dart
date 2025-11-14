@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/Formulario-Reservas.dart';
 import 'package:myapp/Pantalla-Estados.dart';
 import 'package:myapp/models/reservation_data.dart';
+import 'package:myapp/models/reservation_form.dart';
 import 'package:myapp/models/room.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +15,6 @@ import 'package:myapp/constantes/colors.dart';
 
 // Mapeo de estados fijos a colores
 const Map<String, Color> statusColors = {
-  // Ahora 'Reservado' indica que hay un objeto ReservationData asociado
   'Reservado': kReservedColor,
   'Disponible': kAvailableColor,
 };
@@ -23,6 +23,7 @@ const Map<String, Color> statusColors = {
 // CLAVE: Ahora almacena ReservationData para las fechas reservadas
 final Map<DateTime, Object?> hostelAvailability = {
   // Ejemplo de fechas reservadas iniciales (usando datos dummy completos)
+  // Las fechas se deben normalizar a UTC para comparación
   DateTime.utc(2025, 11, 22): ReservationData(
       guestName: 'Ana García (Dummy)',
       persons: '3',
@@ -31,19 +32,26 @@ final Map<DateTime, Object?> hostelAvailability = {
       phone: '555-0001',
       reservationNumber: 'RES-001'),
   DateTime.utc(2025, 11, 23): ReservationData(
-      guestName: 'Carlos López (Dummy)',
-      persons: '1',
-      arrivalDate: '23/11/2025',
-      departureDate: '24/11/2025',
-      phone: '555-0002',
-      reservationNumber: 'RES-002'),
+      guestName: 'Ana García (Dummy)', // Misma reserva
+      persons: '3',
+      arrivalDate: '22/11/2025',
+      departureDate: '25/11/2025',
+      phone: '555-0001',
+      reservationNumber: 'RES-001'),
   DateTime.utc(2025, 11, 24): ReservationData(
-      guestName: 'Beatriz Pérez (Dummy)',
-      persons: '4',
-      arrivalDate: '24/11/2025',
-      departureDate: '27/11/2025',
-      phone: '555-0003',
-      reservationNumber: 'RES-003'),
+      guestName: 'Ana García (Dummy)', // Misma reserva
+      persons: '3',
+      arrivalDate: '22/11/2025',
+      departureDate: '25/11/2025',
+      phone: '555-0001',
+      reservationNumber: 'RES-001'),
+  DateTime.utc(2025, 11, 25): ReservationData(
+      guestName: 'Ana García (Dummy)', // El día de salida también está ocupado
+      persons: '3',
+      arrivalDate: '22/11/2025',
+      departureDate: '25/11/2025',
+      phone: '555-0001',
+      reservationNumber: 'RES-001'),
 };
 
 // ----------------------------------------------------
@@ -89,10 +97,10 @@ class _CalendarPageState extends State<CalendarPage> {
       // Obtener el objeto de reserva o null
       final Object? reservation = hostelAvailability[normalizedDay];
       
-      // Determinar si está reservado basándose en si existe data
+      // Determinar si está reservado basándose en si existe data (es una instancia de ReservationData)
       final bool isReserved = reservation is ReservationData;
 
-      // Lógica para fechas ya reservadas
+      // Lógica para fechas ya reservadas (Rojo)
       if (isReserved) {
         // Usamos la data REAL almacenada en el mapa
         final ReservationData actualData = reservation as ReservationData;
@@ -108,11 +116,11 @@ class _CalendarPageState extends State<CalendarPage> {
         );
       } 
       
-      // Lógica para días disponibles
+      // Lógica para días disponibles (Gris)
       else {
         // Navegación a formulario de nueva reserva
-        // CAMBIO CLAVE: Esperamos el objeto ReservationData? como resultado
-        final ReservationData? newReservationData = await Navigator.push(
+        // Esperamos el objeto ReservationResult?
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ReservationForm(
@@ -120,17 +128,31 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
         );
+        
+        // Verificamos si el resultado es del tipo ReservationResult (el tipo importado)
+        if (result is ReservationResult) {
+          final newReservationData = result.data;
+          final startDate = result.startDate;
+          final endDate = result.endDate;
 
-        // Si se devuelve un objeto ReservationData (es decir, la reserva fue creada)
-        if (newReservationData != null) {
-          // 1. Actualizamos el mapa de disponibilidad con el objeto de datos REAL.
+          // 1. ITERAR y actualizar el mapa para TODO el rango
           setState(() {
-            hostelAvailability[normalizedDay] = newReservationData;
+            DateTime currentDay = startDate;
+            // Iteramos desde la fecha de llegada hasta la fecha de salida (inclusive)
+            while (currentDay.isBefore(endDate) || isSameDay(currentDay, endDate)) {
+              final normalizedLoopDay = DateTime.utc(currentDay.year, currentDay.month, currentDay.day);
+              
+              // Guardamos el objeto de reserva real para cada día del rango
+              hostelAvailability[normalizedLoopDay] = newReservationData;
+              
+              currentDay = currentDay.add(const Duration(days: 1));
+            }
+
             // 2. Deseleccionamos el día para que se pinte de rojo.
             _selectedDay = null; 
           });
           
-          // La navegación a RoomDetailsScreen se maneja ahora dentro del formulario.
+          // La navegación a RoomDetailsScreen se maneja dentro del formulario.
         }
       }
     }

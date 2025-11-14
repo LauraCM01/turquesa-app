@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/Pantalla-Estados.dart';
 import 'package:myapp/models/reservation_data.dart';
+import 'package:myapp/models/reservation_form.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
 
@@ -50,8 +51,8 @@ class _ReservationFormState extends State<ReservationForm> {
   }
 
   // --- FUNCIÓN DE DIÁLOGO MODIFICADA ---
-  // Esta función ahora retorna el objeto ReservationData?
-  Future<ReservationData?> _showSuccessDialog(ReservationData reservationData) {
+  // Usa la clase ReservationResult importada
+  Future<ReservationResult?> _showSuccessDialog(ReservationData reservationData, DateTime startDate, DateTime endDate) {
     final reservationDataMap = {
       'Huésped': reservationData.guestName,
       'Personas': reservationData.persons,
@@ -61,7 +62,7 @@ class _ReservationFormState extends State<ReservationForm> {
       'No. Reserva': reservationData.reservationNumber,
     };
 
-    return showDialog<ReservationData>(
+    return showDialog<ReservationResult>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -108,8 +109,12 @@ class _ReservationFormState extends State<ReservationForm> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                // Cierra el diálogo y retorna el objeto reservationData.
-                Navigator.of(context).pop(reservationData);
+                // Cierra el diálogo y retorna el objeto ReservationResult completo.
+                Navigator.of(context).pop(ReservationResult(
+                  startDate: startDate,
+                  endDate: endDate,
+                  data: reservationData,
+                ));
               },
               child: Text(
                 'ACEPTAR',
@@ -128,39 +133,62 @@ class _ReservationFormState extends State<ReservationForm> {
   // --- FUNCIÓN DE SUBMIT MODIFICADA ---
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      // 1. Parsear las fechas de texto a DateTime
+      final DateFormat formatter = DateFormat('dd/MM/yyyy');
+      DateTime arrivalDateObj;
+      DateTime departureDateObj;
+
       try {
-        final reservationData = ReservationData(
-          guestName: _nameController.text,
-          persons: _personsController.text,
-          arrivalDate: _arrivalDateController.text,
-          departureDate: _departureDateController.text,
-          phone: _phoneController.text,
-          reservationNumber: _reservationNumberController.text,
+        arrivalDateObj = formatter.parse(_arrivalDateController.text);
+        departureDateObj = formatter.parse(_departureDateController.text);
+        
+        // Validación extra: Salida no puede ser anterior a la Llegada
+        if (departureDateObj.isBefore(arrivalDateObj)) {
+           // Aquí deberías mostrar un error visual al usuario
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('La fecha de salida debe ser posterior o igual a la de llegada.')),
+           );
+           return;
+        }
+
+      } catch (e) {
+        debugPrint('Error al parsear fechas: $e');
+        return;
+      }
+
+      final reservationData = ReservationData(
+        guestName: _nameController.text,
+        persons: _personsController.text,
+        arrivalDate: _arrivalDateController.text,
+        departureDate: _departureDateController.text,
+        phone: _phoneController.text,
+        reservationNumber: _reservationNumberController.text,
+      );
+
+      // 2. Mostrar diálogo. Esperamos que devuelva el objeto de resultado.
+      final ReservationResult? result = await _showSuccessDialog(
+        reservationData, 
+        arrivalDateObj, 
+        departureDateObj,
+      );
+
+      if (result != null && mounted) {
+        _formKey.currentState?.reset();
+
+        // 3. Navegamos a la pantalla de detalles de la reserva usando los datos reales.
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => RoomDetailsScreen(
+              reservationData: result.data, 
+            ),
+          ),
         );
 
-        // 1. Mostrar diálogo. Esperamos que devuelva el objeto de datos si el usuario presiona ACEPTAR.
-        final ReservationData? resultData = await _showSuccessDialog(reservationData);
-
-        if (resultData != null && mounted) {
-          _formKey.currentState?.reset();
-
-          // 2. Navegamos a la pantalla de detalles de la reserva usando los datos reales.
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => RoomDetailsScreen(
-                reservationData: resultData, 
-              ),
-            ),
-          );
-
-          // 3. Una vez que el usuario regrese de RoomDetailsScreen,
-          // forzamos el regreso a CalendarPage y enviamos el objeto 'resultData' como resultado.
-          if (mounted) {
-             Navigator.pop(context, resultData); // Devuelve el objeto ReservationData
-          }
+        // 4. Una vez que el usuario regrese de RoomDetailsScreen,
+        // forzamos el regreso a CalendarPage y enviamos el objeto 'result' como resultado.
+        if (mounted) {
+           Navigator.pop(context, result); // Devuelve el objeto ReservationResult
         }
-      } catch (e) {
-        debugPrint('Error al parsear la fecha o navegación: $e');
       }
     }
   }
@@ -464,6 +492,12 @@ class _ReservationFormState extends State<ReservationForm> {
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Por favor, seleccione una fecha';
+              }
+              // Validación de formato simple
+              try {
+                DateFormat('dd/MM/yyyy').parse(value);
+              } catch (_) {
+                return 'Formato de fecha inválido (dd/MM/yyyy)';
               }
               return null;
             },
