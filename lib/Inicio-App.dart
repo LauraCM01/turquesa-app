@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Necesitas esta importación
-import 'app_router.dart'; // Importa la configuración de tu router
+import 'package:go_router/go_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'app_router.dart';
 
 class Inicio extends StatefulWidget {
   const Inicio({super.key});
@@ -12,12 +13,20 @@ class Inicio extends StatefulWidget {
 class _InicioState extends State<Inicio> {
   @override
   Widget build(BuildContext context) {
-    // ⭐ Implementación correcta: Usar MaterialApp.router
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Mi App',
-      // Pasa la configuración del router que definiste
-      routerConfig: router, 
+      routerConfig: router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', ''), // Inglés
+        Locale('es', ''), // Español
+      ],
+      locale: const Locale('es'), // Establecer el idioma por defecto
     );
   }
 }

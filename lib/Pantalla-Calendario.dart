@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:myapp/Formulario-Reservas.dart';
 import 'package:myapp/Pantalla-Estados.dart';
+import 'package:myapp/constantes/colors.dart';
 import 'package:myapp/models/reservation_data.dart';
 import 'package:myapp/models/reservation_form.dart';
 import 'package:myapp/models/room.dart';
 import 'package:myapp/services/calendarioService.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:myapp/constantes/colors.dart';
 
 // ----------------------------------------------------
 // 1. CONSTANTES Y MODELO DE DATOS
@@ -22,7 +22,10 @@ const Map<String, Color> statusColors = {
 
 // ----------------------------------------------------
 // 2. WIDGET DE CALENDARIO (ESTRUCTURA BASE)
-// ----------------------------------------------------
+//
+
+
+
 
 class CalendarPage extends StatefulWidget {
   final Room room;
@@ -41,7 +44,6 @@ class _CalendarPageState extends State<CalendarPage> {
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   PageController? _pageController;
 
-  // Variables de Rango (usadas para selección de múltiples días)
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -51,9 +53,6 @@ class _CalendarPageState extends State<CalendarPage> {
     _reservationsForRoom = _calendarioService.getReservationsForRoom(widget.room.id);
   }
 
-  // 2. FUNCIONES DE LÓGICA
-
-  // Manejo de la selección de un solo día
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) async {
     if (!isSameDay(_selectedDay, selectedDay)) {
       setState(() {
@@ -68,61 +67,49 @@ class _CalendarPageState extends State<CalendarPage> {
         selectedDay.month,
         selectedDay.day,
       );
-      
-      // Obtener el objeto de reserva o null
+
       final ReservationData? reservation = _reservationsForRoom[normalizedDay];
-      
-      // Determinar si está reservado basándose en si existe data
       final bool isReserved = reservation != null;
 
-      // Lógica para fechas ya reservadas (Rojo)
       if (isReserved) {
-        // Navegación a detalles de la reserva (con data real)
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RoomDetailsScreen(
               reservationData: reservation,
-              room: widget.room, // Pasa la habitación actual
+              room: widget.room,
             ),
           ),
         );
-      } 
-      
-      // Lógica para días disponibles (Gris)
-      else {
-        // Navegación a formulario de nueva reserva
-        // Esperamos el objeto ReservationResult?
+      } else {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ReservationForm(
               initialArrivalDate: selectedDay,
-              room: widget.room, // Pasa la habitación actual
+              room: widget.room,
             ),
           ),
         );
-        
-        // Verificamos si el resultado es del tipo ReservationResult (el tipo importado)
+
         if (result is ReservationResult) {
           final newReservationData = result.data;
           final startDate = result.startDate;
           final endDate = result.endDate;
 
-          // 1. Usar el servicio para agregar la reserva
-          _calendarioService.addReservation(widget.room.id, startDate, endDate, newReservationData);
+          _calendarioService.addReservation(
+              widget.room.id, startDate, endDate, newReservationData);
 
-          // 2. Actualizar el estado local
           setState(() {
-            _reservationsForRoom = _calendarioService.getReservationsForRoom(widget.room.id);
-            _selectedDay = null; 
+            _reservationsForRoom =
+                _calendarioService.getReservationsForRoom(widget.room.id);
+            _selectedDay = null;
           });
         }
       }
     }
   }
 
-  // Manejo de la selección de Rango (opcional)
   void _onRangeSelected(DateTime? start, DateTime? end, DateTime focusedDay) {
     setState(() {
       _selectedDay = null;
@@ -132,7 +119,6 @@ class _CalendarPageState extends State<CalendarPage> {
     });
   }
 
-  // FUNCIÓN CLAVE: Construye la apariencia de cada día (círculos de colores)
   Widget _buildDayContainer(
     BuildContext context,
     DateTime day,
@@ -145,17 +131,12 @@ class _CalendarPageState extends State<CalendarPage> {
       day.day,
     );
 
-    Color backgroundColor;
-    Color textColor;
-
-    // Verificar si hay un objeto de reserva para este día
     final ReservationData? reservation = _reservationsForRoom[normalizedDay];
     final bool isReserved = reservation != null;
 
-    // Determinar el estado y el color
     final String status = isReserved ? 'Reservado' : 'Disponible';
-    backgroundColor = statusColors[status] ?? kAvailableColor;
-    textColor = (status == 'Disponible') ? Colors.grey : Colors.white;
+    Color backgroundColor = statusColors[status]!;
+    Color textColor = (status == 'Disponible') ? Colors.grey : Colors.white;
 
     if (isOutside && !isSameDay(_selectedDay, day)) {
       backgroundColor = backgroundColor.withOpacity(0.5);
@@ -169,17 +150,16 @@ class _CalendarPageState extends State<CalendarPage> {
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
-        border:
-            isSameDay(day, DateTime.now()) &&
-                    !isSameDay(_selectedDay, day) &&
-                    !isOutside
-                ? Border.all(color: kPrimaryColor.withOpacity(0.7), width: 1.5)
-                : null,
+        border: isSameDay(day, DateTime.now()) &&
+                !isSameDay(_selectedDay, day) &&
+                !isOutside
+            ? Border.all(color: kPrimaryColor.withOpacity(0.7), width: 1.5)
+            : null,
       ),
       alignment: Alignment.center,
       child: Text(
         '${day.day}',
-        style: TextStyle(
+        style: GoogleFonts.poppins(
           color: textColor,
           fontWeight: FontWeight.w600,
           fontSize: fixedFontSize,
@@ -188,7 +168,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  // Builder dedicado para el día seleccionado (garantiza el color Turquesa)
   Widget _buildSelectedDayContainer(
     BuildContext context,
     DateTime day,
@@ -196,16 +175,15 @@ class _CalendarPageState extends State<CalendarPage> {
   ) {
     const Color backgroundColor = kPrimaryColor;
     final bool isOutside = !isSameMonthLocal(day, focusedDay);
-    final Color finalTextColor = isOutside
-        ? Colors.white.withOpacity(0.7)
-        : Colors.white;
+    final Color finalTextColor =
+        isOutside ? Colors.white.withOpacity(0.7) : Colors.white;
 
     const double fixedFontSize = 14.0;
 
     return Container(
       margin: const EdgeInsets.all(5.0),
       decoration: BoxDecoration(
-        color: backgroundColor, // KPrimaryColor (Turquesa)
+        color: backgroundColor,
         shape: BoxShape.circle,
         border: isSameDay(day, DateTime.now())
             ? Border.all(color: Colors.white, width: 2.0)
@@ -214,7 +192,7 @@ class _CalendarPageState extends State<CalendarPage> {
       alignment: Alignment.center,
       child: Text(
         '${day.day}',
-        style: TextStyle(
+        style: GoogleFonts.poppins(
           color: finalTextColor,
           fontWeight: FontWeight.w700,
           fontSize: fixedFontSize,
@@ -223,12 +201,12 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  // 3. WIDGET BUILD (VISTA)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
+        titleSpacing: 0.0, // <- AQUÍ ESTÁ EL CAMBIO
         backgroundColor: Colors.white,
         scrolledUnderElevation: 0.0,
         elevation: 0,
@@ -241,15 +219,15 @@ class _CalendarPageState extends State<CalendarPage> {
         title: Text(
           widget.room.name,
           style: GoogleFonts.poppins(
-            color: kPrimaryColor, // Usando la constante
+            color: kPrimaryColor,
             fontWeight: FontWeight.bold,
+            fontSize: 18, // <- AQUÍ ESTÁ EL CAMBIO
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Simulación de la imagen de la habitación
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ClipRRect(
@@ -270,8 +248,6 @@ class _CalendarPageState extends State<CalendarPage> {
                 ),
               ),
             ),
-
-            // Título del Mes (Siempre el mes y año actual) y flechas
             Padding(
               padding: const EdgeInsets.only(
                 left: 30.0,
@@ -285,7 +261,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     DateFormat.MMMM('es').format(_focusedDay).capitalize() +
                         ' ' +
                         DateFormat.y('es').format(_focusedDay),
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 18.0,
                       fontWeight: FontWeight.bold,
                       color: kPrimaryColor,
@@ -293,7 +269,6 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                   Row(
                     children: [
-                      // Flechas de navegación
                       IconButton(
                         icon: const Icon(
                           Icons.arrow_back_ios,
@@ -325,8 +300,6 @@ class _CalendarPageState extends State<CalendarPage> {
                 ],
               ),
             ),
-
-            // El Widget principal del Calendario
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
               child: TableCalendar(
@@ -338,33 +311,27 @@ class _CalendarPageState extends State<CalendarPage> {
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,
                 calendarFormat: _calendarFormat,
-
                 headerVisible: false,
-
-                daysOfWeekStyle: const DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: GoogleFonts.poppins(
+                    fontWeight: FontWeight.normal,
                     color: Colors.grey,
                     fontSize: 12,
                   ),
-                  weekendStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  weekendStyle: GoogleFonts.poppins(
+                    fontWeight: FontWeight.normal,
                     color: Colors.grey,
                     fontSize: 12,
                   ),
                 ),
-
                 calendarStyle: const CalendarStyle(
                   isTodayHighlighted: false,
                   outsideDaysVisible: true,
                 ),
-
                 calendarBuilders: CalendarBuilders(
-                  // Usa el builder de seleccionado
                   selectedBuilder: (context, day, focusedDay) {
                     return _buildSelectedDayContainer(context, day, focusedDay);
                   },
-                  // Usa el builder general para todos los demás días
                   defaultBuilder: (context, day, focusedDay) {
                     return _buildDayContainer(context, day, focusedDay);
                   },
@@ -372,7 +339,6 @@ class _CalendarPageState extends State<CalendarPage> {
                     return _buildDayContainer(context, day, focusedDay);
                   },
                 ),
-
                 onDaySelected: _onDaySelected,
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 onPageChanged: (focusedDay) {
@@ -382,10 +348,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 },
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // LEYENDA (Los 3 Estados)
             Padding(
               padding: const EdgeInsets.only(
                 left: 16.0,
@@ -397,11 +360,10 @@ class _CalendarPageState extends State<CalendarPage> {
                 spacing: 16.0,
                 runSpacing: 8.0,
                 alignment: WrapAlignment.center,
-
                 children: [
                   _buildLegendItem(kPrimaryColor, 'Seleccionado'),
-                  _buildLegendItem(kReservedColor, 'Reservado'),
-                  _buildLegendItem(kAvailableColor, 'Disponible'),
+                  _buildLegendItem(statusColors['Reservado']!, 'Reservado'),
+                  _buildLegendItem(statusColors['Disponible']!, 'Disponible'),
                 ],
               ),
             ),
@@ -410,44 +372,37 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
     );
   }
-}
 
-// ----------------------------------------------------
-// 4. FUNCIONES AUXILIARES
-// ----------------------------------------------------
-
-// Implementación local de isSameMonth
-bool isSameMonthLocal(DateTime? a, DateTime? b) {
-  if (a == null || b == null) {
-    return false;
+  bool isSameMonthLocal(DateTime? a, DateTime? b) {
+    if (a == null || b == null) {
+      return false;
+    }
+    return a.year == b.year && a.month == b.month;
   }
-  return a.year == b.year && a.month == b.month;
-}
 
-// Función auxiliar para construir los ítems de la leyenda
-Widget _buildLegendItem(Color color, String text) {
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 15,
-        height: 15,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
-      const SizedBox(width: 5),
-      Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.grey,
-          fontWeight: FontWeight.normal,
+  Widget _buildLegendItem(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 15,
+          height: 15,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-      ),
-    ],
-  );
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-// Extensión para poner la primera letra en mayúscula
 extension StringExtension on String {
   String capitalize() {
     if (isEmpty) return this;

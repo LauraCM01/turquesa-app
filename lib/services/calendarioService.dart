@@ -15,28 +15,28 @@ class CalendarioService {
     // Ejemplo de datos iniciales
     'R001': {
       DateTime.utc(2025, 11, 22): ReservationData(
-          guestName: 'Ana García (Dummy)',
+          guestName: 'Ana García',
           persons: '3',
           arrivalDate: '22/11/2025',
           departureDate: '25/11/2025',
           phone: '555-0001',
           reservationNumber: 'RES-001'),
       DateTime.utc(2025, 11, 23): ReservationData(
-          guestName: 'Ana García (Dummy)',
+          guestName: 'Ana García',
           persons: '3',
           arrivalDate: '22/11/2025',
           departureDate: '25/11/2025',
           phone: '555-0001',
           reservationNumber: 'RES-001'),
       DateTime.utc(2025, 11, 24): ReservationData(
-          guestName: 'Ana García (Dummy)',
+          guestName: 'Ana García',
           persons: '3',
           arrivalDate: '22/11/2025',
           departureDate: '25/11/2025',
           phone: '555-0001',
           reservationNumber: 'RES-001'),
       DateTime.utc(2025, 11, 25): ReservationData(
-          guestName: 'Ana García (Dummy)',
+          guestName: 'Ana García',
           persons: '3',
           arrivalDate: '22/11/2025',
           departureDate: '25/11/2025',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/Pantalla-Calendario.dart';
 import 'package:myapp/constantes/colors.dart';
 import 'package:myapp/models/room.dart';
@@ -49,20 +50,17 @@ class RoomCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         room.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.normal,
                           fontSize: 12,
                           color: Colors.grey, //
                         ),
                         maxLines: 2,
-                        // 2. Cambiar TextOverflow a 'clip' o mantener 'ellipsis'
-                        //    para que trunque SÓLO si supera el maxLines.
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     // Botón '+'
                     IconButton(
-                      // ... (resto del código del IconButton)
                       icon: const Icon(
                         Icons.add_circle,
                         color: kPrimaryColor,
